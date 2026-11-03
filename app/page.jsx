@@ -50,6 +50,11 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  const roofMaterial=new THREE.MeshStandardMaterial({map:roofTex,roughness:.7,side:THREE.DoubleSide});
  const cube=(w,h,d,m,x,y,z,sh=true)=>{const o=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);o.position.set(x,y,z);o.castShadow=sh;o.receiveShadow=true;scene.add(o);return o};
  const cyl=(rt,rb,h,m,x,y,z,n=12)=>{const o=new THREE.Mesh(new THREE.CylinderGeometry(rt,rb,h,n),m);o.position.set(x,y,z);o.castShadow=true;scene.add(o);return o};
+ const edgeGold = new THREE.MeshStandardMaterial({
+  color: 0xb99135,
+  metalness: 0.65,
+  roughness: 0.32,
+});
  cube(180,.15,180,mat('#82906c'),0,-.11,0,false);
  cube(6,.06,60,pathMaterial,0,.01,11,false);
  for(let i=0;i<16;i++){const z=27-i*2.55;cube(6.2,.025,.08,mat('#c7b89c'),0,.05,z,false)}
