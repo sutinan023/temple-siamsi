@@ -25,11 +25,11 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  (async()=>{
  const THREE=await import('three'); if(cancelled)return;
  const host=mountRef.current;
- const scene=new THREE.Scene();scene.background=new THREE.Color('#e3d2b6');scene.fog=new THREE.FogExp2('#e3d2b6',0.0045);
+ const scene=new THREE.Scene();scene.background=new THREE.Color('#e3d2b6');scene.fog=new THREE.FogExp2('#e3d2b6',0.0038);
  const camera=new THREE.PerspectiveCamera(64,1,.1,180); camera.position.set(0,1.72,27);camera.lookAt(0,3,-11);
- const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.65));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.07;renderer.outputColorSpace=THREE.SRGBColorSpace; host.appendChild(renderer.domElement);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.35 : 1.65));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.07;renderer.outputColorSpace=THREE.SRGBColorSpace; host.appendChild(renderer.domElement);
  const hemi=new THREE.HemisphereLight('#eff1e9','#6a6956',1.55);scene.add(hemi);
- const sun=new THREE.DirectionalLight('#ffe8c4',2.35);sun.position.set(-24,34,14);sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);sun.shadow.bias=-0.0003;sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=38;sun.shadow.camera.bottom=-38;sun.shadow.normalBias=.025;scene.add(sun);
+ const sun=new THREE.DirectionalLight('#ffe8c4',2.35);sun.position.set(-24,34,14);sun.castShadow=true;sun.shadow.mapSize.set(window.innerWidth < 760 ? 1024 : 2048,window.innerWidth < 760 ? 1024 : 2048);sun.shadow.bias=-0.0003;sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=38;sun.shadow.camera.bottom=-38;sun.shadow.normalBias=.025;scene.add(sun);
  const mat=(color,roughness=1,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
  // Generated PBR-style textures: no external downloads, licenses or network dependencies.
  const proceduralTexture=(base,detail,kind,size=512)=>{
@@ -84,17 +84,10 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
   // Gable infill under the roof, facing the player.
   const gable=new THREE.Shape();gable.moveTo(-x+.1,y+.05);gable.lineTo(0,y+rise-.17);gable.lineTo(x-.1,y+.05);gable.closePath();
   const ornament=new THREE.Mesh(new THREE.ShapeGeometry(gable),mat('#713725'));ornament.position.z=zFront-.045;scene.add(ornament);
-  // Detailed golden fan lines and a central floral medallion.
-  for(let j=-6;j<=6;j++){
-   if(j===0)continue;
-   let gx=j*x/7,gy=y+.23+rise*(1-Math.abs(gx)/x)*.70;
-   beam(new THREE.Vector3(0,y+.45,zFront+.015),new THREE.Vector3(gx,gy,zFront+.02),.017,gold,5);
-  }
-  const coin=new THREE.Mesh(new THREE.TorusGeometry(.32,.075,8,24),gold);coin.position.set(0,y+rise*.44,zFront+.075);scene.add(coin);
-  for(let xStep=-x+.45;xStep<x-.2;xStep+=.63){
-   let height=y+rise*(1-Math.abs(xStep)/x);
-   const tile=new THREE.Mesh(new THREE.BoxGeometry(.07,.04,.22),gold);tile.position.set(xStep,height-.15,zFront+.13);scene.add(tile);
-  }
+   // V03.4: keep the roof edge silhouette clean. A single subtle emblem
+   // replaces the old fan of floating wire-like gold beams on every gable.
+   const trim=new THREE.Mesh(new THREE.TorusGeometry(.22,.028,6,32),gold);
+   trim.position.set(0,y+rise*.48,zFront+.065);scene.add(trim);
  }
  // V03.3: original handcrafted gilded relief, shipped as a reusable local GLB asset.
  // Keep existing procedural temple as a fallback if the model cannot be loaded.
@@ -106,7 +99,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
      if(node.isMesh){
       node.castShadow=false;node.receiveShadow=true;
       const m=node.material;
-      if(m){m.metalness=.53;m.roughness=.43;m.needsUpdate=true}
+      if(m){m.metalness=.24;m.roughness=.62;m.needsUpdate=true}
      }
     });
     scene.add(gltf.scene);
@@ -117,8 +110,8 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  // Layered glazed roof tiles and gold ridge ornaments; instances limit draw calls.
  function decorateRoof(width,depth,y,zFront,rise){
   const tileMaterial=new THREE.MeshStandardMaterial({color:'#9c4531',roughness:.62,metalness:.04});
-  const rows=13,cols=Math.max(14,Math.floor(width/.42)),total=rows*cols*2;
-  const geometry=new THREE.BoxGeometry(.30,.035,.54),tiles=new THREE.InstancedMesh(geometry,tileMaterial,total);
+  const rows=11,cols=Math.max(14,Math.floor(width/.55)),total=rows*cols*2;
+  const geometry=new THREE.BoxGeometry(.38,.025,.66),tiles=new THREE.InstancedMesh(geometry,tileMaterial,total);
   const dummy=new THREE.Object3D();let idx=0;
   for(const side of [-1,1])for(let row=0;row<rows;row++)for(let col=0;col<cols;col++){
    const t=(col+.5)/cols,half=width/2,xx=side*(.13+t*(half-.25));
@@ -127,12 +120,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
    dummy.rotation.set(0,0,-side*Math.atan2(rise,half));dummy.updateMatrix();tiles.setMatrixAt(idx++,dummy.matrix);
   }
   tiles.castShadow=true;tiles.receiveShadow=true;tiles.instanceMatrix.needsUpdate=true;scene.add(tiles);
-  // Decorative ridgeline and carved end finials.
-  for(const sign of [-1,1]){
-   const a=new THREE.Vector3(sign*width/2,y+.1,zFront+.1);
-   const b=new THREE.Vector3(sign*(width/2+.38),y+.85,zFront+.85);
-   beam(a,b,.07,gold,7);
-  }
+  // Ridge profile intentionally uncluttered; avoid duplicate spiky finials.
  }
  templeRoof(20.8,17.5,8.1,-4.35,3.05);
  templeRoof(16.9,14.3,10.25,-5.65,2.55);
@@ -144,16 +132,8 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  for(const side of [-1,1])for(let z=-11;z>-16;z-=2.5){
   cube(.12,2.45,1.2,wood,side*7.58,4.4,z);cube(.14,.15,1.35,gold,side*7.67,5.57,z);
  }
- // Relief-inspired golden gable ornaments and layered entrance frame.
- const gableGold=new THREE.MeshStandardMaterial({color:'#cba350',roughness:.38,metalness:.48});
- const templeMedallion=new THREE.Mesh(new THREE.TorusGeometry(.72,.055,10,48),gableGold);
- templeMedallion.position.set(0,9.13,-4.11);scene.add(templeMedallion);
- for(let i=0;i<12;i++){
-  const angle=i*Math.PI/6;
-  const a=new THREE.Vector3(Math.cos(angle)*.85,9.13+Math.sin(angle)*.85,-4.08);
-  const b=new THREE.Vector3(Math.cos(angle)*1.20,9.13+Math.sin(angle)*1.20,-4.08);
-  beam(a,b,.023,gableGold,5);
- }
+  // Warm carved-gold frame. The local GLB supplies the prominent gable relief.
+  const gableGold=new THREE.MeshStandardMaterial({color:'#b79250',roughness:.66,metalness:.23});
  for(const side of [-1,1]){
   // Trim running down the front façade.
   cube(.11,6.4,.28,gold,side*7.35,4.85,-7.67);
@@ -168,7 +148,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  for(let i=0;i<9;i++){const x=-1.4+i*.35;cube(.065,.85,.08,gold,x,5.8,-7.08)}
  // ceremonial entrance lintel and ornamental hanging garlands
  cube(5.2,.35,.35,edgeGold,0,6.85,-6.35);
- for(let x=-2.1;x<=2.11;x+=.7){const pendant=cyl(.02,.12,.45,edgeGold,x,6.52,-6.0,6);pendant.rotation.z=.1}
+ for(let x=-1.8;x<=1.81;x+=1.2){const pendant=cyl(.045,.085,.22,edgeGold,x,6.60,-6.0,8);pendant.rotation.z=.1}
  // V03.3: shallow carved paneling, lintels and base plinths add architectural scale.
  const limeWash=proceduralTexture('#d5b993',null,'stone',512);limeWash.repeat.set(2,2);
  const stucco=new THREE.MeshStandardMaterial({map:limeWash,roughness:1});
@@ -213,13 +193,13 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
   for(const z of [6.5,19.5])cube(6.1,.35,.27,plaster,x,.35,z,false);
  }
  // Irregular dressed stone paving; subtle joints add spatial depth.
- const pavingMaterials=['#c5b6a0','#c1ae94','#d2c2aa','#b8a78f'].map(c=>mat(c));
+ const pavingMaterials=['#c9bca5','#c3b49e','#d0c2ae','#bcad99'].map(c=>new THREE.MeshStandardMaterial({color:c,map:groundTex,roughness:1}));
  for(let row=0;row<31;row++){
   const z=-1.8+row*.98;
   for(let col=0;col<4;col++){
    const x=-2.19+col*1.46+((row%2)-.5)*.18;
-   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.42,.045,.93),pavingMaterials[(row*3+col)%4]);
-   slab.position.set(x,.064,z);slab.receiveShadow=true;scene.add(slab);
+   const slab=new THREE.Mesh(new THREE.BoxGeometry(1.445,.024,.968),pavingMaterials[(row*3+col)%4]);
+   slab.position.set(x,.054,z);slab.receiveShadow=true;scene.add(slab);
   }
  }
  // Path stones & leaf scatter
@@ -228,65 +208,55 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
   const z= -2.2+(i*0.719)%30, x=(Math.sin(i*24.71)*.5+.5)*5.75-2.875;
   const pebble=new THREE.Mesh(new THREE.DodecahedronGeometry(.07+(i%4)*.018,0),pebbleMats[i%3]);pebble.scale.y=.25;pebble.position.set(x,.091,z);scene.add(pebble);
  }
- // Layered distant hills are subtle; organic leafy trees replace low-poly spheres.
- const mountain=mat('#a1a28c');
- for(let i=0;i<11;i++){
-  const x=-85+i*17, h=11+(Math.sin(i*2.63)+1)*5;
-  const hill=new THREE.Mesh(new THREE.ConeGeometry(24,h,8),mountain);hill.position.set(x,h/2-1,-82);scene.add(hill);
- }
- const foliageMats=['#395d3a','#527b45','#668b50','#779957','#456f43'].map(c=>mat(c));
- const trunkMat=mat('#655046');
- const crownShape=new THREE.IcosahedronGeometry(.72,1);
- function tree(x,z,scale=1){
-  const height=3.3*scale;
-  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.13*scale,.26*scale,height,7),trunkMat);
-  trunk.position.set(x,height/2,z);trunk.castShadow=true;scene.add(trunk);
-  for(let j=0;j<11;j++){
-   const phi=j*2.39996,spread=(j%4===0?.35:1.0)*scale;
-   const offsetX=Math.cos(phi)*spread,offsetZ=Math.sin(phi)*spread;
-   const y=height+(.2+(j%3)*.33)*scale;
-   if(j%2===0)beam(new THREE.Vector3(x,height*.78,z),new THREE.Vector3(x+offsetX,y-.1*scale,z+offsetZ),.06*scale,trunkMat,5);
-   const crown=new THREE.Mesh(crownShape,foliageMats[j%foliageMats.length]);
-   crown.position.set(x+offsetX,y,z+offsetZ);crown.scale.set((.62+(j%3)*.13)*scale,(.55+(j%4)*.07)*scale,(.60+(j%2)*.12)*scale);crown.castShadow=j%3===0;scene.add(crown);
+  // V03.4 naturalistic grove: branching trunks + alpha-cut foliage sprays.
+  // No overlapping icosahedron canopy balls or stacked leaves above spheres.
+  const mountain=mat('#a1a28c');
+  for(let i=0;i<11;i++){
+   const x=-85+i*17, h=11+(Math.sin(i*2.63)+1)*5;
+   const hill=new THREE.Mesh(new THREE.ConeGeometry(24,h,8),mountain);hill.position.set(x,h/2-1,-82);scene.add(hill);
   }
- }
- for(const side of [-1,1])for(let j=0;j<7;j++)tree(side*(13.8+(j%2)*3.8),-1+j*5.9,.83+(j%3)*.18);
- // Scattered fine foliage adds a more organic tree silhouette at modest GPU cost.
- const smallLeafGeometry=new THREE.PlaneGeometry(.23,.48),smallLeafMaterial=new THREE.MeshStandardMaterial({color:'#5d874d',roughness:1,side:THREE.DoubleSide});
- const leafInstances=new THREE.InstancedMesh(smallLeafGeometry,smallLeafMaterial,14*7*17);
- const leafDummy=new THREE.Object3D();let leafIdx=0;
- for(const side of [-1,1])for(let j=0;j<7;j++){
-  const tx=side*(13.8+(j%2)*3.8),tz=-1+j*5.9,ts=.83+(j%3)*.18,top=3.3*ts;
-  for(let k=0;k<7;k++)for(let m=0;m<17;m++){
-   const a=k*2.39996+m*1.618,dist=(.48+(m%5)*.19)*ts;
-   leafDummy.position.set(tx+Math.cos(a)*dist,top+(.08+(m%7)*.18)*ts,tz+Math.sin(a)*dist);
-   leafDummy.rotation.set(a*.4,m*2.3,a);leafDummy.scale.setScalar(.6+(m%4)*.17);leafDummy.updateMatrix();leafInstances.setMatrixAt(leafIdx++,leafDummy.matrix);
+  const foliageMats=['#395d3a','#527b45','#668b50','#779957','#456f43'].map(c=>mat(c));
+  const trunkMat=mat('#675040');
+  const crownShape=new THREE.IcosahedronGeometry(.72,1); // small potted shrubs only
+  const leafCanvas=document.createElement('canvas');leafCanvas.width=leafCanvas.height=256;
+  const lc=leafCanvas.getContext('2d');
+  // Leaves on several fine branchlets; transparent corners stay genuinely transparent.
+  let leafSeed=19;const leafRnd=()=>{leafSeed=(leafSeed*1664525+1013904223)>>>0;return leafSeed/4294967296};
+  lc.strokeStyle='rgba(60,74,41,.75)';lc.lineWidth=2.5;
+  for(let arm=0;arm<8;arm++){
+   const angle=arm*Math.PI/4,xe=128+Math.cos(angle)*(70+leafRnd()*24),ye=135+Math.sin(angle)*(67+leafRnd()*18);
+   lc.beginPath();lc.moveTo(128,135);lc.quadraticCurveTo((128+xe)/2+9,(135+ye)/2-9,xe,ye);lc.stroke();
+   for(let leaf=0;leaf<11;leaf++){
+    const t=.26+leaf*.065,px=128+(xe-128)*t,py=135+(ye-135)*t;
+    for(const side of [-1,1]){
+     lc.save();lc.translate(px+side*5,py);lc.rotate(angle+side*.8);
+     lc.fillStyle=['#345b33','#477840','#668c4b','#73924e','#527a43'][Math.floor(leafRnd()*5)];
+     lc.beginPath();lc.ellipse(0,side*7,4.5+leafRnd()*2,9+leafRnd()*4,.15,0,Math.PI*2);lc.fill();lc.restore();
+    }
+   }
   }
- }
- leafInstances.instanceMatrix.needsUpdate=true;leafInstances.material.side=THREE.DoubleSide;scene.add(leafInstances);
- // V03.3 foliage cards: irregular translucent leaves soften the low-poly canopy.
- const leafCanvas=document.createElement('canvas');leafCanvas.width=leafCanvas.height=128;
- const lc=leafCanvas.getContext('2d');
- for(let n=0;n<21;n++){
-  const x=12+(n*41)%108,y=8+(n*23)%116,r=8+(n%5)*3;
-  lc.fillStyle=['#416b35','#5b8041','#78924d','#314f2b'][n%4];
-  lc.beginPath();lc.ellipse(x,y,r*.52,r,Math.sin(n*3)*.85,0,Math.PI*2);lc.fill();
- }
- const leafTexture=new THREE.CanvasTexture(leafCanvas);leafTexture.colorSpace=THREE.SRGBColorSpace;
- const branchMaterial=new THREE.MeshStandardMaterial({map:leafTexture,transparent:true,alphaTest:.18,side:THREE.DoubleSide,roughness:1,depthWrite:true});
- const branchCards=new THREE.InstancedMesh(new THREE.PlaneGeometry(1.65,1.65),branchMaterial,14*7*22);
- const foliageDummy=new THREE.Object3D();let foliageCount=0;
- for(const sign of [-1,1])for(let row=0;row<7;row++){
-  const sc=.83+(row%3)*.18, tx=sign*(13.8+(row%2)*3.8),tz=-1+row*5.9;
-  for(let k=0;k<22;k++){
-   const a=k*2.39996,rad=(.6+(k%6)*.19)*sc;
-   foliageDummy.position.set(tx+Math.cos(a)*rad,3.3*sc+(.12+(k%7)*.27)*sc,tz+Math.sin(a)*rad);
-   foliageDummy.rotation.set(Math.sin(k*1.2)*.25,a,Math.cos(k*.8)*.27);
-   foliageDummy.scale.setScalar(sc*(.74+(k%4)*.1));
-   foliageDummy.updateMatrix();branchCards.setMatrixAt(foliageCount++,foliageDummy.matrix);
+  const leafTexture=new THREE.CanvasTexture(leafCanvas);leafTexture.colorSpace=THREE.SRGBColorSpace;
+  const leafMaterial=new THREE.MeshStandardMaterial({map:leafTexture,transparent:true,alphaTest:.32,side:THREE.DoubleSide,roughness:1,depthWrite:true});
+  const treeCount=14,cardsPerTree=14;
+  const branchCards=new THREE.InstancedMesh(new THREE.PlaneGeometry(1.6,1.6),leafMaterial,treeCount*cardsPerTree);
+  const leafDummy=new THREE.Object3D();let leafIdx=0;
+  function tree(x,z,scale=1,idx=0){
+   const height=3.5*scale;
+   const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.095*scale,.23*scale,height,9),trunkMat);
+   trunk.position.set(x,height/2,z);trunk.castShadow=true;scene.add(trunk);
+   for(let j=0;j<6;j++){
+    const a=j*2.39996,r=(.68+j%3*.25)*scale,py=height*(.68+(j%3)*.1);
+    beam(new THREE.Vector3(x,height*.6,z),new THREE.Vector3(x+Math.cos(a)*r,py,z+Math.sin(a)*r),.045*scale,trunkMat,7);
+   }
+   for(let j=0;j<cardsPerTree;j++){
+    const a=j*2.39996+idx*.4,rad=(.30+(j%5)*.20)*scale;
+    leafDummy.position.set(x+Math.cos(a)*rad,height+(.02+(j%6)*.24)*scale,z+Math.sin(a)*rad);
+    leafDummy.rotation.set((j%3-.5)*.32,a*.72,(j%4)*.33);
+    leafDummy.scale.setScalar(scale*(.68+(j%3)*.17));leafDummy.updateMatrix();branchCards.setMatrixAt(leafIdx++,leafDummy.matrix);
+   }
   }
- }
- branchCards.instanceMatrix.needsUpdate=true;scene.add(branchCards);
+  for(const side of [-1,1])for(let j=0;j<7;j++)tree(side*(13.8+(j%2)*3.8),-1+j*5.9,.83+(j%3)*.18,j+(side===1?7:0));
+  branchCards.instanceMatrix.needsUpdate=true;scene.add(branchCards);
  // Low irregular hedges along the edges of the garden.
  for(let i=0;i<130;i++){
   const z=-28+(i*7.13)%70,x=(i%2?1:-1)*(10.8+(i*3.17)%7);
@@ -340,7 +310,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  const down=e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','a','s','d','W','A','S','D','e','E'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='e'&&near)actionRef.current.onInteract()};const up=e=>keys.delete(e.key.toLowerCase());window.addEventListener('keydown',down);window.addEventListener('keyup',up);
  let grabbing=false,oldX=0,oldY=0;const pointerDown=e=>{grabbing=true;oldX=e.clientX;oldY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)};const pointerMove=e=>{if(!grabbing)return;yaw-=(e.clientX-oldX)*.004;pitch=Math.max(-.34,Math.min(.35,pitch-(e.clientY-oldY)*.003));oldX=e.clientX;oldY=e.clientY};const pointerUp=()=>grabbing=false;
  renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointermove',pointerMove);renderer.domElement.addEventListener('pointerup',pointerUp);renderer.domElement.style.touchAction='none';
- const resize=()=>{const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h)};resize();const observer=new ResizeObserver(resize);observer.observe(host);
+ const resize=()=>{const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.fov=h>w?72:64;camera.updateProjectionMatrix();renderer.setSize(w,h)};resize();const observer=new ResizeObserver(resize);observer.observe(host);
  const tick=()=>{frame=requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04);let f=0,side=0;const mov=walkingRef.current;
  if(keys.has('w')||keys.has('arrowup')||mov.forward)f=1;if(keys.has('s')||keys.has('arrowdown')||mov.back)f=-1;
  if(keys.has('a')||keys.has('arrowleft')||mov.left)side=-1;if(keys.has('d')||keys.has('arrowright')||mov.right)side=1;
@@ -364,9 +334,12 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  if(!blocked(camera.position.x,newZ))camera.position.z=newZ;else velocity.y=0;
  camera.position.y=1.72+(Math.hypot(velocity.x,velocity.y)>.35?Math.sin(clock.elapsedTime*10.8)*.023:0);
  camera.rotation.order='YXZ';camera.rotation.y=yaw;camera.rotation.x=pitch;
- const isNear=camera.position.z<1.8&&Math.abs(camera.position.x)<3.3;if(isNear!==near){near=isNear;actionRef.current.onNear(near)}
+ // Require a clear view toward the altar as well as physical proximity.
+  const altarDirection=new THREE.Vector3(-camera.position.x,2.9-camera.position.y,-5.1-camera.position.z).normalize();
+  const gaze=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
+  const isNear=camera.position.z<0.6&&Math.abs(camera.position.x)<3.3&&gaze.dot(altarDirection)>.66;if(isNear!==near){near=isNear;actionRef.current.onNear(near)}
  dust.rotation.y+=dt*.003;const elapsed=clock.elapsedTime;for(const b of butterflies){b.group.position.x=b.base.x+Math.sin(elapsed*.65+b.seed)*.35;b.group.position.y=b.base.y+Math.sin(elapsed*1.4+b.seed)*.17;b.group.rotation.y=Math.sin(elapsed*8+b.seed)*.38}renderer.render(scene,camera)};tick();
- cleanup=()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointermove',pointerMove);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.dispose();scene.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(v=>v.dispose())}});host.removeChild(renderer.domElement)};
+ cleanup=()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointermove',pointerMove);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.dispose();const disposedGeometry=new Set(),disposedMaterial=new Set();scene.traverse(o=>{if(o.geometry&&!disposedGeometry.has(o.geometry)){disposedGeometry.add(o.geometry);o.geometry.dispose()}if(o.material){const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(v=>{if(!disposedMaterial.has(v)){disposedMaterial.add(v);v.dispose()}})}});host.removeChild(renderer.domElement)};
  })();return()=>{cancelled=true;cleanup()}
  },[active,walkingRef]);
  return <div ref={mountRef} className="scene"/>;
@@ -404,7 +377,7 @@ export default function Home(){
  return <main>
   <TempleScene active={phase!=='intro'} onNear={setNear} onInteract={enterRitual} walkingRef={walkingRef}/>
   {phase==='intro'&&<div className="intro"><div className="intro-art"><div className="intro-glow"/><div className="intro-temple">✧</div></div><div className="eyebrow">AN IMMERSIVE TEMPLE EXPERIENCE</div><h1>วิหารเซียมซี</h1><p className="intro-sub">เดินผ่านประตูวัด ฟังเสียงในใจ<br/>แล้วให้ใบเซียมซีพาคุณพบถ้อยคำแห่งกำลังใจ</p><button className="primary" onClick={begin}>เข้าสู่วิหาร <span>↗</span></button><div className="intro-note">ประสบการณ์จำลองเพื่อความเพลิดเพลินและการใคร่ครวญ</div></div>}
-  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V03.3</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
+  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V03.4</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
   {phase==='ritual'&&<div className="overlay"><div className="ritual"><button className="close" onClick={()=>setPhase('walk')}>✕</button><div className="eyebrow">THE FORTUNE RITUAL</div><div className="sacred-icon">❋</div><h2>ตั้งจิตอธิษฐาน</h2><p>นึกถึงเรื่องที่อยากขอคำแนะนำ แล้วค่อย ๆ เขย่ากระบอกเซียมซีให้ครบ 3 ครั้ง</p><div className={'siamsi '+(shake>0?'shaken':'')} style={{'--tilt':shake%2?'12deg':'-9deg'}}><div className="sticks">{Array.from({length:9},(_,i)=><i key={i} style={{transform:`rotate(${(i-4)*4}deg)`,height:`${89+(i%4)*10}px`}}/>)}</div><div className="cup"><span>福</span></div></div><div className="progress">{[1,2,3].map(i=><span key={i} className={shake>=i?'lit':''}/>)}</div><button className="primary" onClick={draw} disabled={shake>=3}>{shake>=3?'กำลังเปิดใบเซียมซี…':`เขย่ากระบอก · ${shake}/3`}</button><div className="footnote">ผลเซียมซีเป็นเนื้อหาเชิงสร้างสรรค์ ไม่ใช่การทำนายที่รับประกันอนาคต</div></div></div>}
   {phase==='result'&&fortune!==null&&<div className="overlay"><div className="paper"><div className="paper-ornament">❋ ✧ ❋</div><div className="eyebrow">FORTUNE STICK NO.</div><div className="fortune-num">{String(fortune+1).padStart(2,'0')}</div><h2>{fortunes[fortune][0]}</h2><div className="rule"/><p className="fortune-main">“{fortunes[fortune][1]}”</p><div className="fortune-detail"><div><b>การงาน · การเรียน</b><p>{fortunes[fortune][2]}</p></div><div><b>ความสัมพันธ์</b><p>{fortunes[fortune][3]}</p></div></div><div className="paper-actions"><button onClick={()=>window.print()}>บันทึก / พิมพ์ใบเซียมซี</button><button className="primary" onClick={reset}>กลับไปเดินในวัด</button></div><div className="footnote">เซียมซีจำลองเพื่อความบันเทิงและการสะท้อนความคิด</div></div></div>}
  </main>

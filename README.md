@@ -1,48 +1,28 @@
-# วิหารเซียมซี · Temple Walk V03.3
+# Temple Walk V03.4 — Thai Temple Refinement
 
-อัปเดตจาก V03.2 โดยคง UI การเดิน การชนวัตถุ เสียง และคำทำนาย 12 ใบเดิม
+Built directly from the user's working V03.3 page.jsx and the supplied GLB.
 
-## สิ่งที่เปลี่ยน
+## Update an existing project
+- Back up your original `app/page.jsx` and `public/models/temple-ornaments.glb`.
+- Copy these two files from this package into the matching paths in your project.
+- CSS and the 12 fortune messages remain unchanged.
 
-- **GLB จริงในโปรเจกต์:** `public/models/temple-ornaments.glb` เป็นโมเดล relief สีทองที่สร้างขึ้นใหม่สำหรับโปรเจกต์นี้เอง ครอบคลุมหน้าบันวิหาร 3 ชั้น ซุ้มประตู และลายแกะกรอบทางเข้าวิหาร
-- โหลดด้วย `GLTFLoader` จาก `/models/temple-ornaments.glb`; ถ้าไฟล์โหลดไม่ได้จะยังคงฉากเดิมไว้และแจ้งใน Console
-- ปรับแสงหมอก สีและวัสดุ; เพิ่มผิวฉาบบนผนังและลวดลายขอบ
-- เพิ่มชั้นใบไม้แบบ alpha-tested บนต้นไม้ และกลีบบัวในบ่อน้ำ
-- **ไม่เปลี่ยน** ระบบ WASD/ปุ่มเคลื่อนที่, เดินแบบ smoothing/collision, interaction E, การเขย่าเซียมซี, 12 คำทำนาย หรือสไตล์ UI
-
-> V03.3 เป็นการเริ่มใช้ GLB สำหรับ *รายละเอียดตกแต่ง* ยังไม่ใช่โมเดลอาคารวัดทั้งหมดแบบ photogrammetry/Blender ระดับสมจริงใกล้ภาพถ่าย
-
-## การติดตั้ง
-
-ใช้ Node.js 20+ (แนะนำ 22)
-
+## Running
 ```bash
 npm install
 npm run dev
 ```
+Open http://localhost:3000 and test on mobile and desktop.
 
-เปิด http://localhost:3000
+## Changes in V03.4
+- Removes excess procedural gold fan spokes and decorative roof spikes that overlapped the GLB ornaments.
+- Uses less metallic GLB materials to reduce harsh gold wire appearance.
+- Replaces large cartoon-like crown balls with transparent procedural leaf sprays and branched tree trunks.
+- Softens path tiling and improves the camera field of view for portrait orientation.
+- Shows the fortune interaction button only when near and facing the altar.
+- Caps mobile pixel ratio and shadow quality for stable performance.
+- Retains the UI, navigation, ambient audio and all 12 existing fortunes.
 
-## การติดตั้งทับโปรเจกต์เก่า
-
-สำรองโปรเจกต์ก่อน จากไฟล์ ZIP ให้คัดลอก **ทั้ง** `app/page.jsx` และ `public/models/temple-ornaments.glb` ไปยังโปรเจกต์เดิม ไม่จำเป็นต้องแทน CSS ถ้าใช้ V03.2 อยู่แล้ว
-
-> สำคัญ: ต้องมีไฟล์ `public/models/temple-ornaments.glb` ด้วย ไม่เช่นนั้นประดับทอง 3D ใหม่จะไม่ปรากฏ
-
-## ตรวจสอบ
-
-1. เปิด DevTools > Network ตรวจคำขอ `temple-ornaments.glb` ว่า HTTP 200
-2. เปิด DevTools > Console ตรวจว่าไม่มี `GLB loader unavailable` หรือ `Temple GLB ornament fallback`
-3. ทดลองกดเริ่มเดิน เดินด้วย WASD หรือปุ่มจอ ผ่านประตูไปยังโต๊ะเซียมซี
-4. กด E / ปุ่ม เสี่ยงเซียมซี เขย่า 3 ครั้ง เปิดใบคำทำนาย และกลับมาเดิน
-5. ทดลองแนวตั้งบนมือถือ/Device Toolbar และสังเกตความลื่นไหล
-
-## การทดสอบที่ทำในสภาพแวดล้อมผู้สร้าง
-
-- ตรวจ `app/page.jsx` ด้วย TypeScript JSX parser: ผ่าน (0 syntax errors)
-- เปิดและตรวจโครงสร้าง GLB ด้วย trimesh: ผ่าน (2 meshes)
-- **ยังไม่ได้รัน Next.js build หรือทดสอบการแสดงผลเบราว์เซอร์จริง** เพราะไม่มีแพ็กเกจ Next.js ใน npm offline cache
-
-## หมายเหตุ Performance
-
-GLB ประมาณ 1 MB (uncompressed); ใบไม้ใช้ InstancedMesh เพื่อลด draw calls. ถ้าบนมือถือกระตุก ควรเพิ่ม adaptive quality / shadow distance ในเวอร์ชันถัดไป
+## Notes
+This is an incremental visual refinement, not a photorealistic full-temple model replacement. Asset license: user-provided GLB and generated in-project textures.
+The code was syntax checked for the non-JSX scene section; a full Next.js build and live browser test were not run in this environment.
