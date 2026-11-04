@@ -6,7 +6,7 @@ export default function ShakeRitual({onClose,onComplete,soundEnabled}) {
   const [energy, setEnergy] = useState(0);
   const [tilt, setTilt] = useState(0);
   const [sensorState, setSensorState] = useState('idle');
-  const [hint, setHint] = useState('กดค้างแล้วลากขึ้น–ลงเพื่อเขย่ากระบอก');
+  const [hint, setHint] = useState('กำลังเตรียมการเขย่าเซียมซี…');
   const [stickDropped, setStickDropped] = useState(false);
   const energyRef = useRef(0);
   const pointerRef = useRef(null);
@@ -44,7 +44,7 @@ export default function ShakeRitual({onClose,onComplete,soundEnabled}) {
     if (next >= TARGET) {
       doneRef.current = true;
       setStickDropped(true);
-      setHint('ไม้เซียมซีหล่นแล้ว แตะเพื่อเปิดใบคำทำนาย');
+      setHint('ไม้เซียมซีหล่นแล้ว กำลังเปิดคำทำนาย…');
       if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(55);
     }
   }, [clack]);
@@ -96,22 +96,36 @@ export default function ShakeRitual({onClose,onComplete,soundEnabled}) {
   },[addShake]);
 
   const enableMotion = async () => {
-    if (!('DeviceMotionEvent' in window)) {setSensorState('unavailable');return;}
+    if (!('DeviceMotionEvent' in window)) {setSensorState('unavailable'); setHint('อุปกรณ์นี้ไม่รองรับ Motion — ใช้การปัดหรือลากเพื่อเขย่าได้เลย'); return;}
     try {
       if (typeof DeviceMotionEvent.requestPermission === 'function') {
         const permission=await DeviceMotionEvent.requestPermission();
-        if (permission !== 'granted') {setSensorState('denied');return;}
+        if (permission !== 'granted') {setSensorState('denied'); setHint('ไม่ได้เปิด Motion — ใช้การปัดหรือลากเพื่อเขย่าแทนได้เลย'); return;}
       }
       sensorRef.current={last:0,prev:0,gravity:0,initialized:false};
       setSensorState('enabled');
-      setHint('ถือโทรศัพท์ให้มั่น แล้วเขย่าเบา ๆ หรือปัดที่กระบอก');
-    } catch (_) {setSensorState('denied');}
+      setHint('อนุญาต Motion แล้ว · ถือโทรศัพท์ให้มั่นแล้วเขย่าได้เลย');
+    } catch (_) {setSensorState('denied'); setHint('เปิด Motion ไม่สำเร็จ — ใช้การปัดหรือลากเพื่อเขย่าแทนได้เลย');}
   };
+  useEffect(()=>{
+    enableMotion();
+  // intentionally only once on entering the ritual
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[]);
+
   useEffect(()=>{
     if(sensorState!=='enabled' || stickDropped) return;
     window.addEventListener('devicemotion',sensorMotion,{passive:true});
     return ()=>window.removeEventListener('devicemotion',sensorMotion);
   },[sensorState,sensorMotion,stickDropped]);
+
+  useEffect(()=>{
+    if(!stickDropped) return;
+    setHint('ได้ไม้เซียมซีแล้ว กำลังเปิดคำทำนาย…');
+    const t = window.setTimeout(()=>onComplete(), 900);
+    return ()=>window.clearTimeout(t);
+  },[stickDropped,onComplete]);
+
   useEffect(()=>()=>{try{audioRef.current?.close()}catch(_){}},[]);
 
   return <div className="overlay">
@@ -136,13 +150,12 @@ export default function ShakeRitual({onClose,onComplete,soundEnabled}) {
       </div>
       <div className="shake-message" aria-live="polite">{hint}</div>
       {!stickDropped && <>
-        {sensorState!=='enabled' && <button className="motion-allow" onClick={enableMotion}>
-          {sensorState==='denied'?'ไม่อนุญาตเซนเซอร์ — ใช้นิ้วปัดแทน':sensorState==='unavailable'?'เซนเซอร์ไม่พร้อม — ใช้นิ้วปัดแทน':'📱 เปิดการเขย่าโทรศัพท์จริง'}
+        {sensorState==='enabled' && <span className="motion-on">✓ Motion พร้อมแล้ว · เขย่าโทรศัพท์หรือปัดกระบอกได้เลย</span>}
+        {(sensorState==='denied' || sensorState==='unavailable') && <button className="motion-allow" onClick={enableMotion}>
+          {sensorState==='denied'?'ลองเปิด Motion อีกครั้ง':'ลองเปิด Motion'}
         </button>}
-        {sensorState==='enabled' && <span className="motion-on">✓ เซนเซอร์พร้อม · เขย่าเบา ๆ ได้เลย</span>}
         <button className="shake-fallback" onClick={()=>addShake(15,energyRef.current%2?1:-1)}>เขย่าแบบแตะปุ่ม (ทางเลือก)</button>
       </>}
-      {stickDropped && <button className="primary shake-reveal" onClick={onComplete}>✨ เปิดใบเซียมซี</button>}
       <div className="footnote">ใช้เล่นเพื่อความเพลิดเพลิน · หากเวียนหัวหรือไม่สะดวกเคลื่อนไหว ใช้ปุ่มสำรองได้</div>
     </div>
   </div>;
