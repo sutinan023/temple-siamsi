@@ -17,3 +17,8 @@
 @keyframes fortuneFall{0%{transform:translate(0,0) rotate(0);opacity:1}55%{transform:translate(50px,-45px) rotate(38deg)}100%{transform:translate(92px,75px) rotate(96deg)}}
 @media(max-width:620px){.fortune-gesture{padding:15px 18px}.fortune-gesture .sacred-icon{margin-top:4px}.fortune-gesture h2{font-size:26px}.fortune-gesture>p{font-size:12px;margin:4px 0}.fortune-gesture .shake-touch-area{min-height:208px}.fortune-gesture .footnote{margin-top:12px}}
 @media(prefers-reduced-motion:reduce){.fortune-gesture *{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* V04.4: responsive first-person framing and unobtrusive return-to-temple control. */
+.camera-reset{position:absolute;top:76px;right:23px;z-index:3;background:#1e2b29b8;color:#fff1d6;border:1px solid #ffffff55;border-radius:100px;padding:8px 14px;font-size:12px;backdrop-filter:blur(6px)}
+.camera-reset:active{transform:scale(.97)}
+@media(max-width:620px){.camera-reset{top:69px;right:16px;padding:8px 12px;font-size:11px}}

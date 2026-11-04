@@ -17,7 +17,7 @@ const fortunes = [
  ['ระฆังรับอรุณ','ข่าวดีอาจมาในรูปแบบที่ไม่คาดคิด จงเปิดใจต่อความเป็นไปได้ และใช้สติเลือกทางของตน','โอกาสใหม่อาจเกิดจากการพบปะ','ความจริงใจจะนำพาความสัมพันธ์ที่ดี']
 ];
 
-function TempleScene({active, onNear, onInteract, walkingRef}) {
+function TempleScene({active, onNear, onInteract, walkingRef, resetCameraRef}) {
  const mountRef=useRef(null); const actionRef=useRef({onNear,onInteract});
  useEffect(()=>{actionRef.current={onNear,onInteract}},[onNear,onInteract]);
  useEffect(()=>{
@@ -27,7 +27,12 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  const THREE=await import('three'); if(cancelled)return;
  const host=mountRef.current;
  const scene=new THREE.Scene();scene.background=new THREE.Color('#e3d2b6');scene.fog=new THREE.FogExp2('#e3d2b6',0.0038);
- const camera=new THREE.PerspectiveCamera(64,1,.1,180); camera.position.set(0,1.72,27);camera.lookAt(0,3,-11);
+ // One physical starting point and heading across mobile and desktop.
+ const START={x:0,y:1.72,z:27,yaw:0,pitch:.045};
+ const camera=new THREE.PerspectiveCamera(64,1,.1,180);
+ camera.position.set(START.x,START.y,START.z);
+ camera.rotation.order='YXZ';
+ camera.rotation.set(START.pitch,START.yaw,0);
  const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, window.innerWidth < 760 ? 1.35 : 1.65));renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.07;renderer.outputColorSpace=THREE.SRGBColorSpace; host.appendChild(renderer.domElement);
  const hemi=new THREE.HemisphereLight('#eff1e9','#6a6956',1.55);scene.add(hemi);
  const sun=new THREE.DirectionalLight('#ffe8c4',2.35);sun.position.set(-24,34,14);sun.castShadow=true;sun.shadow.mapSize.set(window.innerWidth < 760 ? 1024 : 2048,window.innerWidth < 760 ? 1024 : 2048);sun.shadow.bias=-0.0003;sun.shadow.camera.left=-38;sun.shadow.camera.right=38;sun.shadow.camera.top=38;sun.shadow.camera.bottom=-38;sun.shadow.normalBias=.025;scene.add(sun);
@@ -378,11 +383,32 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  // floating dust
  const count=260,pos=new Float32Array(count*3);for(let i=0;i<count;i++){pos[i*3]=(Math.random()-.5)*22;pos[i*3+1]=Math.random()*9+.3;pos[i*3+2]=(Math.random()-.5)*45+6};const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(pos,3));const dust=new THREE.Points(geom,new THREE.PointsMaterial({color:'#ffe8aa',size:.065,transparent:true,opacity:.5,depthWrite:false}));scene.add(dust);
  // pointer movement + keyboard navigation
- const keys=new Set();let yaw=0,pitch=.045,near=false,frame=0;const velocity=new THREE.Vector2();const clock=new THREE.Clock();
- const down=e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','a','s','d','W','A','S','D','e','E'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='e'&&near)actionRef.current.onInteract()};const up=e=>keys.delete(e.key.toLowerCase());window.addEventListener('keydown',down);window.addEventListener('keyup',up);
+ const keys=new Set();let yaw=START.yaw,pitch=START.pitch,near=false,frame=0;const velocity=new THREE.Vector2();const clock=new THREE.Clock();
+ const down=e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','w','a','s','d','W','A','S','D','e','E'].includes(e.key))e.preventDefault();keys.add(e.key.toLowerCase());if(e.key.toLowerCase()==='e'&&near)actionRef.current.onInteract();if(e.key.toLowerCase()==='r')resetCamera()};const up=e=>keys.delete(e.key.toLowerCase());window.addEventListener('keydown',down);window.addEventListener('keyup',up);
  let grabbing=false,oldX=0,oldY=0;const pointerDown=e=>{grabbing=true;oldX=e.clientX;oldY=e.clientY;renderer.domElement.setPointerCapture(e.pointerId)};const pointerMove=e=>{if(!grabbing)return;yaw-=(e.clientX-oldX)*.004;pitch=Math.max(-.34,Math.min(.35,pitch-(e.clientY-oldY)*.003));oldX=e.clientX;oldY=e.clientY};const pointerUp=()=>grabbing=false;
  renderer.domElement.addEventListener('pointerdown',pointerDown);renderer.domElement.addEventListener('pointermove',pointerMove);renderer.domElement.addEventListener('pointerup',pointerUp);renderer.domElement.style.touchAction='none';
- const resize=()=>{const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h;camera.fov=h>w?72:64;camera.updateProjectionMatrix();renderer.setSize(w,h)};resize();const observer=new ResizeObserver(resize);observer.observe(host);
+ // Keep the subject centered while adapting the visible framing to portrait screens.
+ // Wider vertical FOV on narrow viewports reveals more garden without altering scene coordinates.
+ const resize=()=>{
+  const w=Math.max(host.clientWidth,1),h=Math.max(host.clientHeight,1),aspect=w/h;
+  const referenceAspect=16/9,referenceVfov=64;
+  const referenceHFov=2*Math.atan(Math.tan(referenceVfov*Math.PI/360)*referenceAspect);
+  const requiredVFov=2*Math.atan(Math.tan(referenceHFov/2)/aspect)*180/Math.PI;
+  camera.aspect=aspect;
+  camera.fov=Math.max(60,Math.min(83,requiredVFov));
+  camera.updateProjectionMatrix();
+  renderer.setSize(w,h);
+ };
+ // User can return to exactly the same position, regardless of viewport.
+ const resetCamera=()=>{
+  camera.position.set(START.x,START.y,START.z);
+  yaw=START.yaw;pitch=START.pitch;velocity.set(0,0);
+  keys.clear();
+  Object.keys(walkingRef.current).forEach(key=>{walkingRef.current[key]=false});
+  if(near){near=false;actionRef.current.onNear(false)}
+ };
+ resetCameraRef.current=resetCamera;
+ resize();const observer=new ResizeObserver(resize);observer.observe(host);
  const tick=()=>{frame=requestAnimationFrame(tick);const dt=Math.min(clock.getDelta(),.04);let f=0,side=0;const mov=walkingRef.current;
  if(keys.has('w')||keys.has('arrowup')||mov.forward)f=1;if(keys.has('s')||keys.has('arrowdown')||mov.back)f=-1;
  if(keys.has('a')||keys.has('arrowleft')||mov.left)side=-1;if(keys.has('d')||keys.has('arrowright')||mov.right)side=1;
@@ -413,15 +439,15 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
   const gaze=new THREE.Vector3(0,0,-1).applyEuler(camera.rotation);
   const isNear=camera.position.z<0.6&&Math.abs(camera.position.x)<3.3&&gaze.dot(altarDirection)>.66;if(isNear!==near){near=isNear;actionRef.current.onNear(near)}
  dust.rotation.y+=dt*.003;const elapsed=clock.elapsedTime;for(const r of pondRipples){const t=(elapsed*.085+r.phase)%1;r.mesh.scale.setScalar(.55+t*.9);r.mesh.material.opacity=.20*(1-t)}for(const f of blossomGroups){f.mesh.position.y=f.baseY+Math.sin(elapsed*1.15+f.phase)*.018;}for(const b of butterflies){b.group.position.x=b.base.x+Math.sin(elapsed*.65+b.seed)*.35;b.group.position.y=b.base.y+Math.sin(elapsed*1.4+b.seed)*.17;b.group.rotation.y=Math.sin(elapsed*8+b.seed)*.38}renderer.render(scene,camera)};tick();
- cleanup=()=>{cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointermove',pointerMove);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.dispose();const disposedGeometry=new Set(),disposedMaterial=new Set();scene.traverse(o=>{if(o.geometry&&!disposedGeometry.has(o.geometry)){disposedGeometry.add(o.geometry);o.geometry.dispose()}if(o.material){const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(v=>{if(!disposedMaterial.has(v)){disposedMaterial.add(v);v.dispose()}})}});host.removeChild(renderer.domElement)};
+ cleanup=()=>{resetCameraRef.current=null;cancelAnimationFrame(frame);observer.disconnect();window.removeEventListener('keydown',down);window.removeEventListener('keyup',up);renderer.domElement.removeEventListener('pointerdown',pointerDown);renderer.domElement.removeEventListener('pointermove',pointerMove);renderer.domElement.removeEventListener('pointerup',pointerUp);renderer.dispose();const disposedGeometry=new Set(),disposedMaterial=new Set();scene.traverse(o=>{if(o.geometry&&!disposedGeometry.has(o.geometry)){disposedGeometry.add(o.geometry);o.geometry.dispose()}if(o.material){const m=Array.isArray(o.material)?o.material:[o.material];m.forEach(v=>{if(!disposedMaterial.has(v)){disposedMaterial.add(v);v.dispose()}})}});host.removeChild(renderer.domElement)};
  })();return()=>{cancelled=true;cleanup()}
- },[active,walkingRef]);
+ },[active,walkingRef,resetCameraRef]);
  return <div ref={mountRef} className="scene"/>;
 }
 
 export default function Home(){
  const [phase,setPhase]=useState('intro'),[near,setNear]=useState(false),[fortune,setFortune]=useState(null),[sound,setSound]=useState(false);
- const walkingRef=useRef({forward:false,back:false,left:false,right:false});const audioRef=useRef(null);
+ const walkingRef=useRef({forward:false,back:false,left:false,right:false});const resetCameraRef=useRef(null);const audioRef=useRef(null);
  const enterRitual=useCallback(()=>{setPhase('ritual')},[]);
  const begin=()=>setPhase('walk');
  const playChime=()=>{if(!sound)return;try{let ac=audioRef.current;if(!ac){ac=new (window.AudioContext||window.webkitAudioContext)();audioRef.current=ac}if(ac.state==='suspended')ac.resume();for(const [i,f] of [523.25,659.25,783.99].entries()){const o=ac.createOscillator(),g=ac.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.0001,ac.currentTime+i*.14);g.gain.exponentialRampToValueAtTime(.055,ac.currentTime+i*.14+.025);g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+i*.14+1.3);o.connect(g).connect(ac.destination);o.start(ac.currentTime+i*.14);o.stop(ac.currentTime+i*.14+1.4)}}catch(e){}};
@@ -449,9 +475,9 @@ export default function Home(){
  },[sound,phase]);
  const movement=(dir,value)=>{walkingRef.current[dir]=value};
  return <main>
-  <TempleScene active={phase!=='intro'} onNear={setNear} onInteract={enterRitual} walkingRef={walkingRef}/>
+  <TempleScene active={phase!=='intro'} onNear={setNear} onInteract={enterRitual} walkingRef={walkingRef} resetCameraRef={resetCameraRef}/>
   {phase==='intro'&&<div className="intro"><div className="intro-art"><div className="intro-glow"/><div className="intro-temple">✧</div></div><div className="eyebrow">AN IMMERSIVE TEMPLE EXPERIENCE</div><h1>วิหารเซียมซี</h1><p className="intro-sub">เดินผ่านประตูวัด ฟังเสียงในใจ<br/>แล้วให้ใบเซียมซีพาคุณพบถ้อยคำแห่งกำลังใจ</p><button className="primary" onClick={begin}>เข้าสู่วิหาร <span>↗</span></button><div className="intro-note">ประสบการณ์จำลองเพื่อความเพลิดเพลินและการใคร่ครวญ</div></div>}
-  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V04.3.1.3</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
+  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V04.4</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><button className="camera-reset" onClick={()=>resetCameraRef.current?.()} aria-label="กลับไปจุดเริ่มต้นและมองวิหาร">↺ มองวิหาร</button><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
   {phase==='ritual'&&<ShakeRitual onClose={()=>setPhase('walk')} onComplete={completeRitual} soundEnabled={sound}/>}
   {phase==='result'&&fortune!==null&&<div className="overlay"><div className="paper"><div className="paper-ornament">❋ ✧ ❋</div><div className="eyebrow">FORTUNE STICK NO.</div><div className="fortune-num">{String(fortune+1).padStart(2,'0')}</div><h2>{fortunes[fortune][0]}</h2><div className="rule"/><p className="fortune-main">“{fortunes[fortune][1]}”</p><div className="fortune-detail"><div><b>การงาน · การเรียน</b><p>{fortunes[fortune][2]}</p></div><div><b>ความสัมพันธ์</b><p>{fortunes[fortune][3]}</p></div></div><div className="paper-actions"><button onClick={()=>window.print()}>บันทึก / พิมพ์ใบเซียมซี</button><button className="primary" onClick={reset}>กลับไปเดินในวัด</button></div><div className="footnote">เซียมซีจำลองเพื่อความบันเทิงและการสะท้อนความคิด</div></div></div>}
  </main>

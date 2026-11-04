@@ -1,20 +1,17 @@
-# Temple Siamsi V04.3 — Fantasy Lotus Garden
+# Temple Siamsi V04.4 — Responsive 3D Camera
 
-## Updated from V04.2
-- Replaced rectangular pools with original procedural organic water silhouettes.
-- Added curved stone bank, lightweight reeds, notched lily pads, layered pink lotus blooms, and subtle ripples.
-- Lowered the long side walls that previously hid the ponds from the path.
-- **Kept `ShakeRitual.jsx`, main walking mechanics, and fortune reveal as in V04.2.**
+This package is based on the existing V04.3.1 pond-fixed scene.
+
+## Updates
+- Start position (x=0, y=1.72, z=27) and heading are identical on desktop and phone.
+- Perspective vertical field of view adapts to viewport aspect ratio (60°–83° range). This improves scene composition but does not guarantee identical crops across aspect ratios.
+- **↺ มองวิหาร** button and **R** key reset position, heading and movement.
+- Walking, collision, pond, GLB and ShakeRitual stay unchanged.
 
 ## Run
 ```bash
 npm install
 npm run dev
 ```
-Open http://localhost:3000
 
-## Upgrade existing project
-Only replace `app/page.jsx` in the V04.2 project. No other files are required to change.
-
-## Verification
-`page.jsx` and `ShakeRitual.jsx` parsed successfully with the TypeScript JSX parser. Browser rendering and device FPS have not been verified here. Please test on your iPhone after deployment.
+Test on desktop and iPhone from a fresh session. Both should face the main temple at the same world location. The iPhone will still show less horizontal scenery because its viewport is narrower.
