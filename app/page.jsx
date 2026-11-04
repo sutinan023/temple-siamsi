@@ -173,10 +173,10 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  // V04.3 FANTASY LOTUS GARDEN — organic ponds, light foliage, low-cost animation.
  // All shapes are local, original procedural geometry; no external assets or fetches.
  const pondRipples=[];
- const pondWater=new THREE.MeshStandardMaterial({color:'#568e85',roughness:.27,metalness:.06,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:true});
+ const pondWater=new THREE.MeshStandardMaterial({color:'#3f9e9c',roughness:.27,metalness:.06,transparent:true,opacity:.95,side:THREE.DoubleSide,depthWrite:true});
  const pondBase=mat('#45695d'),pondBank=mat('#9d9978');
  const lilyGreen=[mat('#527b55'),mat('#67935c'),mat('#8cac6b')];
- const petalColors=[mat('#e9a4b7',.72),mat('#f4c2ca',.68),mat('#f8d9cf',.7)];
+ const petalColors=[mat('#ee8fb2',.72),mat('#ffc5d4',.68),mat('#ffe3d9',.7)];
  const lotusCore=mat('#efc968',.68),reedMat=mat('#738a56');
  const pondStoneMaterials=['#b9ac91','#ccbea4','#a39c86'].map(c=>mat(c));
  const pondRingMaterial=new THREE.MeshBasicMaterial({color:'#d7ede0',transparent:true,opacity:.28,depthWrite:false});
@@ -234,7 +234,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
     const z=(fract(pondSeed(i,9))-.5)*9.5;
     const wx=cx+x,wz=centerZ+z;
     const pad=new THREE.Mesh(lilyPadGeometry,lilyGreen[i%lilyGreen.length]);
-    const size=.23+(i%5)*.054;
+    const size=.32+(i%5)*.068;
     pad.rotation.x=-Math.PI/2;pad.rotation.z=angle;
     pad.scale.set(size,size,size);pad.position.set(wx,.119+(i%3)*.002,wz);scene.add(pad);
     if(i%4===0){
@@ -244,9 +244,9 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
       for(let layer=0;layer<layers;layer++)for(let k=0;k<(bud?6:8);k++){
         const a=k*Math.PI*2/(bud?6:8)+layer*.3;
         const petal=new THREE.Mesh(petalGeometry,petalColors[(i+layer)%3]);
-        const radial=bud?.065:(layer===0?.14:.075);
+        const radial=bud?.085:(layer===0?.19:.10);
         petal.position.set(Math.cos(a)*radial,.12+layer*.05,Math.sin(a)*radial);
-        petal.scale.set(bud?.065:.105,bud?.19:(layer===0?.18:.16),bud?.075:.085);
+        petal.scale.set(bud?.085:.14,bud?.24:(layer===0?.23:.20),bud?.095:.11);
         petal.rotation.set(Math.sin(a)*(bud?.27:.72),0,-Math.cos(a)*(bud?.27:.72));
         bloom.add(petal);
       }
@@ -263,7 +263,7 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
     scene.add(ring);pondRipples.push({mesh:ring,phase:i/3+(side===1?.15:.55)});
   }
  };
- addPond(-12.5,-1);addPond(12.5,1);
+ addPond(-6.9,-1);addPond(6.9,1);
  // Irregular dressed stone paving; subtle joints add spatial depth.
  const pavingMaterials=['#c9bca5','#c3b49e','#d0c2ae','#bcad99'].map(c=>new THREE.MeshStandardMaterial({color:c,map:groundTex,roughness:1}));
  for(let row=0;row<31;row++){
@@ -370,11 +370,11 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
  const lanternMat=new THREE.MeshStandardMaterial({color:'#f9c382',emissive:'#ef9a50',emissiveIntensity:1.2});
  for(const x of [-4.6,4.6])for(const z of [8,-2]){cyl(.045,.045,3.9,wood,x,1.9,z);const l=cyl(.47,.38,1.1,lanternMat,x,3.5,z,12);cyl(.49,.49,.13,dark,x,4.1,z);cyl(.49,.49,.13,dark,x,2.88,z);if(z===8){const light=new THREE.PointLight('#ffc274',4,5);light.position.set(x,3.5,z);scene.add(light)}}
  // side ornamental walls and plants
- for(const x of [-9,9]){
+ for(const x of [-11.2,11.2]){
   for(let z=-3;z<26;z+=5){cyl(.2,.3,1.1,wood,x,.65,z);const crown=new THREE.Mesh(crownShape,foliageMats[(Math.floor(z)+30)%5]);crown.position.set(x,1.7,z);crown.scale.set(.95,.75,.95);scene.add(crown)}
   cube(.36,.38,35,plaster,x,.19,10,false)
  }
- for(const x of [-7.6,7.6])for(let z=-2;z<23;z+=4){const s=cyl(.65,.7,.58,stone,x,.3,z);const b=new THREE.Mesh(crownShape,foliageMats[3]);b.position.set(x,1,z);b.scale.set(.85,.7,.85);scene.add(b)}
+ for(const x of [-10.6,10.6])for(let z=-2;z<23;z+=4){const s=cyl(.65,.7,.58,stone,x,.3,z);const b=new THREE.Mesh(crownShape,foliageMats[3]);b.position.set(x,1,z);b.scale.set(.85,.7,.85);scene.add(b)}
  // floating dust
  const count=260,pos=new Float32Array(count*3);for(let i=0;i<count;i++){pos[i*3]=(Math.random()-.5)*22;pos[i*3+1]=Math.random()*9+.3;pos[i*3+2]=(Math.random()-.5)*45+6};const geom=new THREE.BufferGeometry();geom.setAttribute('position',new THREE.BufferAttribute(pos,3));const dust=new THREE.Points(geom,new THREE.PointsMaterial({color:'#ffe8aa',size:.065,transparent:true,opacity:.5,depthWrite:false}));scene.add(dust);
  // pointer movement + keyboard navigation
@@ -397,6 +397,8 @@ function TempleScene({active, onNear, onInteract, walkingRef}) {
   if(x < -7+radius || x > 7-radius || z < -2.05 || z > 27)return true;
   // Solid columns supporting the ceremonial entrance.
   if(Math.abs(z-11)<.55+radius && (Math.abs(x-3.8)<.42+radius || Math.abs(x+3.8)<.42+radius))return true;
+  // Keep players on the garden path instead of walking onto the water.
+  for(const cx of [-6.9,6.9])if(((x-cx)/3.05)**2+((z-13)/6.0)**2<1)return true;
   // Do not walk through decorative lanterns.
   for(const zz of [8,-2])for(const xx of [-4.6,4.6])if(Math.hypot(x-xx,z-zz)<.23+radius)return true;
   return false;
@@ -449,7 +451,7 @@ export default function Home(){
  return <main>
   <TempleScene active={phase!=='intro'} onNear={setNear} onInteract={enterRitual} walkingRef={walkingRef}/>
   {phase==='intro'&&<div className="intro"><div className="intro-art"><div className="intro-glow"/><div className="intro-temple">✧</div></div><div className="eyebrow">AN IMMERSIVE TEMPLE EXPERIENCE</div><h1>วิหารเซียมซี</h1><p className="intro-sub">เดินผ่านประตูวัด ฟังเสียงในใจ<br/>แล้วให้ใบเซียมซีพาคุณพบถ้อยคำแห่งกำลังใจ</p><button className="primary" onClick={begin}>เข้าสู่วิหาร <span>↗</span></button><div className="intro-note">ประสบการณ์จำลองเพื่อความเพลิดเพลินและการใคร่ครวญ</div></div>}
-  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V04.3</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
+  {phase==='walk'&&<><div className="topbar"><div className="brand">✦ วิหารเซียมซี <small>Temple Fortune Walk · V04.3.1.3</small></div><button className="sound" onClick={()=>setSound(v=>!v)}>{sound?'♪ เสียงเปิด':'♪ เสียงปิด'}</button></div><div className="crosshair">✦</div><div className="walkhint">{near?'ถึงโต๊ะเซียมซีแล้ว กดปุ่มเพื่อเริ่มพิธี':'เดินตามทางหิน ผ่านสระบัว ไปยังศาลาด้านหน้า'}</div>{near&&<button className="interact" onClick={enterRitual}>✦ เสี่ยงเซียมซี <span>กด E</span></button>}<div className="movement"><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('forward',true)}} onPointerUp={()=>movement('forward',false)} onPointerCancel={()=>movement('forward',false)}>↑</button></div><div><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('left',true)}} onPointerUp={()=>movement('left',false)} onPointerCancel={()=>movement('left',false)}>←</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('back',true)}} onPointerUp={()=>movement('back',false)} onPointerCancel={()=>movement('back',false)}>↓</button><button onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);movement('right',true)}} onPointerUp={()=>movement('right',false)} onPointerCancel={()=>movement('right',false)}>→</button></div></div><div className="walkfooter">W A S D / ปุ่มลูกศร · ลากจอเพื่อมองรอบตัว</div></>}
   {phase==='ritual'&&<ShakeRitual onClose={()=>setPhase('walk')} onComplete={completeRitual} soundEnabled={sound}/>}
   {phase==='result'&&fortune!==null&&<div className="overlay"><div className="paper"><div className="paper-ornament">❋ ✧ ❋</div><div className="eyebrow">FORTUNE STICK NO.</div><div className="fortune-num">{String(fortune+1).padStart(2,'0')}</div><h2>{fortunes[fortune][0]}</h2><div className="rule"/><p className="fortune-main">“{fortunes[fortune][1]}”</p><div className="fortune-detail"><div><b>การงาน · การเรียน</b><p>{fortunes[fortune][2]}</p></div><div><b>ความสัมพันธ์</b><p>{fortunes[fortune][3]}</p></div></div><div className="paper-actions"><button onClick={()=>window.print()}>บันทึก / พิมพ์ใบเซียมซี</button><button className="primary" onClick={reset}>กลับไปเดินในวัด</button></div><div className="footnote">เซียมซีจำลองเพื่อความบันเทิงและการสะท้อนความคิด</div></div></div>}
  </main>
